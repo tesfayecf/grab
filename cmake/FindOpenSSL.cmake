@@ -8,9 +8,14 @@
 #   OpenSSL_VERSION   			  	- Full version with format <major.minor.patch>
 
 # Locate ONNX include directory
-set(OpenSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/.deps/openssl-3.5.2/include/openssl)
+set(OpenSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/.deps/openssl-3.5.2/include)
 
 mark_as_advanced(OpenSSL_INCLUDE_DIR)
+
+# Collect all libraries in the specified paths
+file(GLOB_RECURSE OpenSSL_LIBS
+    PATHS ${PROJECT_SOURCE_DIR}/.deps/openssl-3.5.2/lib64/*.so.*
+)
 
 string(REGEX MATCH "openssl-([0-9]+\\.[0-9]+\\.[0-9]+)" VERSION_MATCH "${OpenSSL_INCLUDE_DIR}")
 if(VERSION_MATCH)

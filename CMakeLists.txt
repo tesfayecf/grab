@@ -51,6 +51,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Find external dependencies
+find_package(Boost 1.71.0 REQUIRED)
+find_package(OpenSSL REQUIRED) # Automically adds OpenSSL_INCLUDE_DIR
 
 # Print configuration summary
 message(STATUS "Configuration Summary:")
@@ -58,7 +60,11 @@ message(STATUS "  C++ Compiler:      ${CMAKE_CXX_COMPILER}")
 message(STATUS "  C++ Standard:      ${CMAKE_CXX_STANDARD}")
 message(STATUS "  C++ Flags:         ${CMAKE_CXX_FLAGS}")
 message(STATUS "  Build Type:        ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Source Directory:  ${PROJECT_SOURCE_DIR}")
+message(STATUS "  Build Directory:   ${CMAKE_BINARY_DIR}")
 message(STATUS "  Install Prefix:    ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "  Boost Version:     ${Boost_VERSION}")
+message(STATUS "  OpenSSL Version:   ${OpenSSL_VERSION}")
 
 # Add the source code
 add_subdirectory(src)

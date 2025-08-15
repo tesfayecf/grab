@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      // ----------------------------------------------------------------------
+      // ENGINE (C++)
+      // ----------------------------------------------------------------------
+      {
+        "label": "grab-build",
+        "type": "shell",
+        "command": "cmake",
+        "args": [
+            "--build", "${workspaceFolder}/.build/debug",
+            "--target", "install",
+        ],
+        "group": {
+            "kind": "build",
+            "isDefault": false
+        },
+        "problemMatcher": ["$gcc"],
+      },
+      {
+        "label": "grab-configure",
+        "type": "shell",
+        "command": "cmake",
+        "args": [
+          "-S", "${workspaceFolder}",
+          "-B", "${workspaceFolder}/.build/debug",
+          "-G", "Ninja",
+          "-D", "CMAKE_MAKE_PROGRAM=${workspaceFolder}/../.deps/ninja/ninja",
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": false
+        },
+        "problemMatcher": ["$gcc"],
+      }
+    ]
+  }
+  

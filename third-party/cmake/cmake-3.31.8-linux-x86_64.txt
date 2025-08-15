@@ -1,0 +1,1 @@
+Download cmake-3.31.8-linux-x86_64 and instal in this folder. The /bin and /share folder and needed.

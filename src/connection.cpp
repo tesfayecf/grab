@@ -1,112 +1,152 @@
+// Include the header file for this class
 #include "connection.hpp"
+// Include iostream for console output and error messages
 #include <iostream>
+// Include sstream for string stream operations (building JSON messages)
 #include <sstream>
+// Include regex for parsing WebSocket message formats
 #include <regex>
 
+// Constructor: Initialize all member variables and set up required components
 Connection::Connection(net::io_context& ioc, const Config& config)
-    : ioc_(ioc)
-    , config_(config)
-    , is_connected_(false)
-    , is_connecting_(false)
-    , auto_reconnect_(true)
-    , should_stop_(false)
+    : ioc_(ioc)                    // Store reference to IO context for async operations
+    , config_(config)              // Store configuration parameters
+    , is_connected_(false)         // Initially not connected
+    , is_connecting_(false)        // Initially not attempting connection
+    , auto_reconnect_(true)        // Enable auto-reconnect by default
+    , should_stop_(false)          // Not stopped initially
 {
-    // Initialize SSL context
+    // Initialize SSL context for secure connections
     if (config_.use_ssl) {
+        // Create SSL context for TLS v1.2 client connections
         ssl_ctx_ = std::make_unique<ssl::context>(ssl::context::tlsv12_client);
+        // Set default certificate verification paths for SSL validation
         ssl_ctx_->set_default_verify_paths();
+        // Enable peer certificate verification for security
         ssl_ctx_->set_verify_mode(ssl::verify_peer);
     }
 
-    // Initialize timers
+    // Initialize all timers with the provided IO context
+    // These timers will be used for reconnection, connection timeout, and ping timeout
     reconnect_timer_ = std::make_unique<net::steady_timer>(ioc_);
     connection_timer_ = std::make_unique<net::steady_timer>(ioc_);
     ping_timer_ = std::make_unique<net::steady_timer>(ioc_);
 }
 
+// Destructor: Ensure clean shutdown by calling stop()
 Connection::~Connection() {
-    stop();
+    stop();  // This will disconnect and clean up all resources
 }
 
+// Initiate connection to the WebSocket server
 bool Connection::connect() {
+    // Lock the state mutex to ensure thread-safe access to connection state
     std::lock_guard<std::mutex> lock(state_mutex_);
     
+    // Check if already connected or in the process of connecting
     if (is_connected_ || is_connecting_) {
-        return is_connected_;
+        return is_connected_;  // Return current connection status
     }
 
     try {
-        // Create new WebSocket stream
+        // Create new WebSocket stream based on SSL configuration
         if (config_.use_ssl) {
+            // Create SSL-enabled WebSocket stream using the configured SSL context
             ws_ = std::make_unique<WebSocketStream>(ioc_, *ssl_ctx_);
         } else {
             // For non-SSL connections, we'd need a different stream type
-            // For now, assuming SSL is always used for Binance
+            // For now, assuming SSL is always used for Binance (production requirement)
             throw std::runtime_error("Non-SSL connections not implemented");
         }
 
+        // Set connection state to indicate connection attempt is in progress
         is_connecting_ = true;
+        
+        // Start the asynchronous connection process
         do_connect();
+        
+        // Return true to indicate connection initiation was successful
+        // Note: This doesn't mean the connection is established yet (it's async)
         return true;
 
     } catch (const std::exception& e) {
+        // Handle any exceptions during connection setup
         handle_connection_error("Failed to initiate connection: " + std::string(e.what()));
         return false;
     }
 }
 
+// Disconnect from the WebSocket server gracefully
 void Connection::disconnect() {
+    // Lock the state mutex to ensure thread-safe access to connection state
     std::lock_guard<std::mutex> lock(state_mutex_);
     
+    // Check if already disconnected - no work needed
     if (!is_connected_) {
         return;
     }
 
     try {
-        // Cancel all timers
-        reconnect_timer_->cancel();
-        connection_timer_->cancel();
-        ping_timer_->cancel();
+        // Cancel all active timers to prevent them from firing during shutdown
+        reconnect_timer_->cancel();    // Stop reconnection attempts
+        connection_timer_->cancel();   // Stop 24-hour timeout timer
+        ping_timer_->cancel();         // Stop ping timeout monitoring
 
-        // Close WebSocket connection
+        // Close WebSocket connection gracefully if it's open
         if (ws_ && ws_->is_open()) {
+            // Send a normal close frame to the server before disconnecting
             ws_->close(websocket::close_code::normal);
         }
 
-        is_connected_ = false;
-        is_connecting_ = false;
+        // Update connection state flags
+        is_connected_ = false;    // Mark as disconnected
+        is_connecting_ = false;   // Not attempting to connect
 
+        // Notify user code that disconnection has occurred
         if (on_disconnected_) {
             on_disconnected_();
         }
 
     } catch (const std::exception& e) {
+        // Handle any errors during disconnection process
         if (error_callback_) {
             error_callback_("Error during disconnect: " + std::string(e.what()));
         }
     }
 }
 
+// Subscribe to a specific data stream with a callback function
 void Connection::subscribe_stream(const std::string& stream_name, MessageCallback callback) {
+    // Lock the callbacks mutex to ensure thread-safe access to the callbacks map
     std::lock_guard<std::mutex> lock(callbacks_mutex_);
+    
+    // Store the callback function for this stream name
+    // This will overwrite any existing callback for the same stream
     stream_callbacks_[stream_name] = std::move(callback);
     
-    std::cout << "Subscribed to stream: " << stream_name << " (total streams: " << stream_callbacks_.size() << ")" << std::endl;
+    // Log the subscription for debugging purposes
+    std::cout << "Subscribed to stream: " << stream_name 
+              << " (total streams: " << stream_callbacks_.size() << ")" << std::endl;
 
-    // If already connected, send individual subscription message
+    // If already connected to the server, send immediate subscription message
     if (is_connected_) {
+        // Build a JSON subscription message according to Binance WebSocket API format
         std::ostringstream json;
-        json << "{";
-        json << "\"method\": \"SUBSCRIBE\",";
-        json << "\"params\": [\"" << stream_name << "\"],";
+        json << "{";                                           // Start JSON object
+        json << "\"method\": \"SUBSCRIBE\",";                 // Subscription method
+        json << "\"params\": [\"" << stream_name << "\"],";   // Array with stream name
+        
+        // Generate unique ID using current timestamp in milliseconds
         json << "\"id\": " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now().time_since_epoch()).count();
-        json << "}";
+        json << "}";                                           // End JSON object
         
+        // Convert to string for sending
         std::string subscription_message = json.str();
         std::cout << "Sending individual subscription: " << subscription_message << std::endl;
         
-        // Send the subscription message (unlock before calling send_message to avoid deadlock)
+        // Send the subscription message asynchronously to avoid blocking
+        // Use weak_ptr pattern to avoid circular references and potential deadlocks
         auto self = shared_from_this();
         ioc_.post([self, subscription_message]() {
             self->send_message(subscription_message);
@@ -114,25 +154,35 @@ void Connection::subscribe_stream(const std::string& stream_name, MessageCallbac
     }
 }
 
+// Unsubscribe from a specific data stream
 void Connection::unsubscribe_stream(const std::string& stream_name) {
     {
+        // Lock the callbacks mutex to safely remove the callback
         std::lock_guard<std::mutex> lock(callbacks_mutex_);
+        
+        // Remove the callback function for this stream from the map
+        // This prevents future messages from being routed to the callback
         stream_callbacks_.erase(stream_name);
     }
 
-    // If already connected, send individual unsubscription message
+    // If currently connected to the server, send unsubscription message
     if (is_connected_) {
+        // Build a JSON unsubscription message according to Binance WebSocket API format
         std::ostringstream json;
-        json << "{";
-        json << "\"method\": \"UNSUBSCRIBE\",";
-        json << "\"params\": [\"" << stream_name << "\"],";
+        json << "{";                                             // Start JSON object
+        json << "\"method\": \"UNSUBSCRIBE\",";                 // Unsubscription method
+        json << "\"params\": [\"" << stream_name << "\"],";     // Array with stream name
+        
+        // Generate unique ID using current timestamp in milliseconds
         json << "\"id\": " << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now().time_since_epoch()).count();
-        json << "}";
+        json << "}";                                             // End JSON object
         
+        // Convert to string for sending
         std::string unsubscription_message = json.str();
         std::cout << "Sending unsubscription: " << unsubscription_message << std::endl;
         
+        // Send the unsubscription message asynchronously
         auto self = shared_from_this();
         ioc_.post([self, unsubscription_message]() {
             self->send_message(unsubscription_message);
@@ -140,49 +190,78 @@ void Connection::unsubscribe_stream(const std::string& stream_name) {
     }
 }
 
+// Send a raw message through the WebSocket connection
 bool Connection::send_message(const std::string& message) {
+    // Lock the state mutex to ensure thread-safe access to connection state
     std::lock_guard<std::mutex> lock(state_mutex_);
     
+    // Verify that we're connected and have a valid WebSocket stream
     if (!is_connected_ || !ws_) {
-        return false;
+        return false;  // Cannot send if not connected
     }
 
     try {
+        // Send the message through the WebSocket using Boost.Asio buffer
+        // This is a synchronous operation that will block until sent
         ws_->write(net::buffer(message));
-        return true;
+        return true;  // Successfully sent
+        
     } catch (const std::exception& e) {
+        // Handle any errors during message sending
         handle_connection_error("Failed to send message: " + std::string(e.what()));
-        return false;
+        return false;  // Failed to send
     }
 }
 
+// Set callback functions for connection state changes
 void Connection::set_connection_callbacks(ConnectionCallback on_connected, ConnectionCallback on_disconnected) {
-    on_connected_ = std::move(on_connected);
-    on_disconnected_ = std::move(on_disconnected);
+    // Store the callback functions for later invocation
+    on_connected_ = std::move(on_connected);        // Called when connection established
+    on_disconnected_ = std::move(on_disconnected);  // Called when connection lost
 }
 
+// Set callback function for error handling
 void Connection::set_error_callback(ErrorCallback callback) {
+    // Store the error callback function for later invocation when errors occur
     error_callback_ = std::move(callback);
 }
 
+// Check if the connection is currently active
 bool Connection::is_connected() const {
+    // Lock the state mutex for thread-safe access to connection state
     std::lock_guard<std::mutex> lock(state_mutex_);
+    
+    // Return true only if all conditions are met:
+    // 1. is_connected_ flag is true
+    // 2. WebSocket stream object exists
+    // 3. WebSocket stream is actually open at the protocol level
     return is_connected_ && ws_ && ws_->is_open();
 }
 
+// Enable or disable automatic reconnection
 void Connection::set_auto_reconnect(bool enable) {
+    // Set the auto-reconnect flag - this controls whether the connection
+    // will attempt to reconnect automatically when the connection is lost
     auto_reconnect_ = enable;
 }
 
+// Get a list of all currently subscribed stream names
 std::vector<std::string> Connection::get_subscribed_streams() const {
+    // Lock the callbacks mutex for thread-safe access to the streams map
     std::lock_guard<std::mutex> lock(callbacks_mutex_);
+    
+    // Create a vector to hold the stream names
     std::vector<std::string> streams;
+    
+    // Reserve space for efficiency (avoid multiple reallocations)
     streams.reserve(stream_callbacks_.size());
     
+    // Extract all stream names from the map keys
     for (const auto& pair : stream_callbacks_) {
-        streams.push_back(pair.first);
+        streams.push_back(pair.first);  // pair.first is the stream name
     }
     
+    // Return the list of stream names
     return streams;
 }
 

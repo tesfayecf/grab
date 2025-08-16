@@ -6,8 +6,33 @@
 #include "ticker.hpp"
 #include "connection.hpp"
 
+const std::vector<std::string> ticker_symbols = {"usdcusdt", "btcusdt",  "ethusdt"};
+
 // List of ticker symbols
-const std::vector<std::string> tickers = {"btcusdt", "ethusdt", "ltcusdt", "bchusdt"};
+const std::vector<std::string> symbols_matrix = {
+    // "usdcusdt", "btcusdt",  "ethusdt",  "bnbusdt",
+    "-",        "btcusdc",  "ethusdc",  "bnbusdc",
+    "-",        "-",        "ethbtc",   "bnbbtc", 
+    // "-",        "-",        "-",        "bnbeth", 
+    "-",        "-",        "-",        "-",      
+};
+
+// List of ticker symbols
+const std::vector<std::string> symbols_matrix2 = {
+    "usdcusdt", "btcusdt",  "ethusdt",  "bnbusdt",  "adausdt",  "solusdt",  "xrpusdt",
+    "-",        "btcusdc",  "ethusdc",  "bnbusdc",  "adausdc",  "solusdc",  "xrpusdc",
+    "-",        "-",        "ethbtc",   "bnbbtc",   "adabtc",   "solbtc",   "xrpbtc"
+    "-",        "-",        "-",        "bnbeth",   "adaeth",   "soleth",   "xrpeth",
+    "-",        "-",        "-",        "-",        "adabnb",   "solbnb",   "xrpbnb",
+};
+
+const std::vector<std::vector<float>> prices_matrix = {
+    {  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0 },
+    {  1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0 },
+    {  1.0,  1.0,  0.0,  0.0,  0.0,  0.0,  0.0 },
+    {  1.0,  1.0,  1.0,  1.0,  0.0,  0.0,  0.0 },
+    {  1.0,  1.0,  1.0,  1.0,  0.0,  0.0,  0.0 },
+};
 
 int main() {
     try {
@@ -28,7 +53,11 @@ int main() {
         std::vector<std::shared_ptr<grab::ticker::Ticker>> tickers;
 
         // Create all ticker instances but don't subscribe yet
-        for (const auto& ticker_symbol : tickers) {
+        for (const auto& ticker_symbol : symbols_matrix) {
+            if (ticker_symbol == "-") { 
+                continue;
+            }
+
             // Create ticker wrapper
             auto ticker = std::make_shared<grab::ticker::Ticker>(connection, ticker_symbol, "bookTicker");
             
@@ -57,6 +86,9 @@ int main() {
                 // Subscribe to all tickers now that connection is established
                 for (auto& ticker : tickers) {
                     ticker->subscribe();
+
+                    // wait
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
 
                 std::cout << "All ticker subscriptions sent!" << std::endl;
@@ -78,6 +110,7 @@ int main() {
         // Run the I/O context to process async operations
         std::cout << "Press Ctrl+C to stop." << std::endl;
         
+        // Run the I/O context to process async operations
         ioc.run();
     }
     catch (std::exception const& e) {

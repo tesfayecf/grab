@@ -164,7 +164,7 @@ namespace ticker
          * all messages for this ticker's stream. It verifies the message is for the
          * correct stream and then forwards it to the user's message callback.
          */
-        void on_message_received(const std::string &stream_name, const std::string &data);
+        void handle_message_(const std::string &stream_name, const std::string &data);
 
         /**
          * @brief Internal method to handle connection errors
@@ -173,7 +173,7 @@ namespace ticker
          * Handles ticker-specific error conditions by updating the subscription
          * status and notifying the user's error callback if one is registered.
          */
-        void on_connection_error(const std::string &error_message);
+        void on_connection_error_(const std::string &error_message);
     };
 
 } // namespace ticker

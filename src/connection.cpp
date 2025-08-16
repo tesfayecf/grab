@@ -610,7 +610,6 @@ namespace connection
                 if (it != this->stream_callbacks_.end() && it->second)
                 {
                     // Call the registered callback with the stream name and data
-                    std::cout << "Invoking callback for stream: " << stream_name << std::endl;
                     it->second(stream_name, message);
                 }
             }

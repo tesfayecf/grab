@@ -8,21 +8,5 @@
     "cmake.buildDirectory": "${workspaceFolder}/.build",
     "cmake.cmakePath": "${workspaceFolder}/third-party/cmake/bin/cmake",
     "cmake.cpackPath": "${workspaceFolder}/third-party/cmake/bin/cpack",
-    "cmake.ctestPath": "${workspaceFolder}/third-party/cmake/bin/ctest",
-    "files.associations": {
-        "*.cpp": "cpp",
-        "cctype": "cpp",
-        "clocale": "cpp",
-        "cmath": "cpp",
-        "csetjmp": "cpp",
-        "csignal": "cpp",
-        "cstdarg": "cpp",
-        "cstddef": "cpp",
-        "cstdio": "cpp",
-        "cstdlib": "cpp",
-        "cstring": "cpp",
-        "ctime": "cpp",
-        "cwchar": "cpp",
-        "cwctype": "cpp"
-    }
+    "cmake.ctestPath": "${workspaceFolder}/third-party/cmake/bin/ctest"
 }

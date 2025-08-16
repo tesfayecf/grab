@@ -80,7 +80,7 @@ namespace ticker
                     if (auto self = weak_self.lock())
                     {
                         // Forward the message to the ticker's internal handler
-                        self->on_message_received(stream_name, data);
+                        self->handle_message_(stream_name, data);
                     }
                     // If weak_ptr.lock() fails, the Ticker has been destroyed and we ignore the message
                 }
@@ -92,7 +92,7 @@ namespace ticker
         catch (const std::exception &e)
         {
             // Handle any errors during subscription process
-            this->on_connection_error("Failed to subscribe to stream: " + std::string(e.what()));
+            this->on_connection_error_("Failed to subscribe to stream: " + std::string(e.what()));
         }
     }
 
@@ -152,10 +152,10 @@ namespace ticker
     // private:
 
     // Internal method to handle messages received from the connection
-    void Ticker::on_message_received(const std::string &stream_name, const std::string &data)
+    void Ticker::handle_message_(const std::string &stream_name, const std::string &data)
     {
         // Verify this message is for our stream (safety check)
-        if (stream_name != this->stream_name_)
+        if (stream_name != this->ticker_symbol_)
         {
             return; // Not for us - ignore this message
         }
@@ -169,7 +169,7 @@ namespace ticker
     }
 
     // Internal method to handle ticker-specific error conditions
-    void Ticker::on_connection_error(const std::string &error_message)
+    void Ticker::on_connection_error_(const std::string &error_message)
     {
         // Mark as unsubscribed since an error occurred
         this->is_subscribed_ = false;

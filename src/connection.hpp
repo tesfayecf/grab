@@ -1,30 +1,18 @@
 // Ensure this header is only included once to prevent redefinition errors
 #pragma once
 
-// Include Boost.Beast core functionality for HTTP/WebSocket operations
-#include <boost/beast/core.hpp>
-// Include Boost.Beast WebSocket support for WebSocket protocol handling
-#include <boost/beast/websocket.hpp>
-// Include Boost.Beast SSL support for secure WebSocket connections
-#include <boost/beast/ssl.hpp>
-// Include Boost.Asio connection utilities for establishing network connections
-#include <boost/asio/connect.hpp>
-// Include TCP socket support for network communication
-#include <boost/asio/ip/tcp.hpp>
-// Include steady timer for implementing timeouts and periodic operations
-#include <boost/asio/steady_timer.hpp>
-// Include functional for std::function callback support
-#include <functional>
-// Include string for string manipulation and storage
-#include <string>
-// Include memory for smart pointer management (shared_ptr, unique_ptr)
-#include <memory>
-// Include unordered_map for efficient stream name to callback mapping
-#include <unordered_map>
-// Include chrono for time-based operations and timeouts
-#include <chrono>
-// Include mutex for thread-safe operations
 #include <mutex>
+#include <string>
+#include <memory>
+#include <chrono>
+#include <functional>
+#include <unordered_map>
+#include <boost/beast/ssl.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 // Create convenient namespace aliases to reduce verbosity in code
 namespace beast = boost::beast;          // Beast library for HTTP/WebSocket
@@ -89,9 +77,9 @@ public:
         // Default constructor that initializes all configuration values
         // Sets up reasonable defaults for connecting to Binance WebSocket API
         Config() 
-            : host("stream.binance.com")           // Official Binance WebSocket server
+            : host("data-stream.binance.com")           // Official Binance WebSocket server
             , port("9443")                         // Standard SSL WebSocket port
-            , endpoint("/ws/btcusdt@bookTicker")   // Example single-stream endpoint
+            , endpoint("/")   // Example single-stream endpoint
             , use_ssl(true)                        // Always use SSL for security
             , reconnect_delay(5)                   // Wait 5 seconds between reconnects
             , connection_timeout(24 * 60 * 60)    // 24 hours in seconds

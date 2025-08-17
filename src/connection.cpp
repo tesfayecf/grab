@@ -588,46 +588,55 @@ namespace connection
     {
         try
         {
-            // Parse messages using regex to handle Binance's combined stream format
-            // Binance combined streams use format: {"s":"streamname",{...}}
-            std::regex combined_pattern("\\s*\"s\"\\s*:\\s*\"([^\"]*)\"");
-            std::smatch matches;
-
-            // Check if this message matches the combined stream format
-            if (std::regex_search(message, matches, combined_pattern))
+            // Call all the stream callbacks
             {
-                // Extract the stream name from the first capture group
-                std::string stream_name = matches[1].str();
-
-                // Conver to lower case
-                std::transform(stream_name.begin(), stream_name.end(), stream_name.begin(), ::tolower);
-
-                // Thread-safe lookup of the callback for this specific stream
                 std::lock_guard<std::mutex> lock(callbacks_mutex_);
-                auto it = this->stream_callbacks_.find(stream_name);
-                
-                // If we found a callback for this stream, invoke it
-                if (it != this->stream_callbacks_.end() && it->second)
+                for (auto &callback : this->stream_callbacks_)
                 {
-                    // Call the registered callback with the stream name and data
-                    it->second(stream_name, message);
+                    callback.second(message);
                 }
             }
-            else
-            {
-                // Handle single stream format or messages that don't match combined format
-                // This handles direct stream connections or non-standard message formats
-                std::lock_guard<std::mutex> lock(callbacks_mutex_);
+
+            // // Parse messages using regex to handle Binance's combined stream format
+            // // Binance combined streams use format: {"s":"streamname",{...}}
+            // std::regex combined_pattern("\\s*\"s\"\\s*:\\s*\"([^\"]*)\"");
+            // std::smatch matches;
+
+            // // Check if this message matches the combined stream format
+            // if (std::regex_search(message, matches, combined_pattern))
+            // {
+            //     // Extract the stream name from the first capture group
+            //     std::string stream_name = matches[1].str();
+
+            //     // Conver to lower case
+            //     std::transform(stream_name.begin(), stream_name.end(), stream_name.begin(), ::tolower);
+
+            //     // Thread-safe lookup of the callback for this specific stream
+            //     std::lock_guard<std::mutex> lock(callbacks_mutex_);
+            //     auto it = this->stream_callbacks_.find(stream_name);
                 
-                // If we have any registered callbacks, use the first one
-                // This is a fallback for single-stream connections
-                if (!stream_callbacks_.empty())
-                {
-                    auto first_callback = stream_callbacks_.begin();
-                    // Pass the entire message as-is to the callback
-                    first_callback->second(first_callback->first, message);
-                }
-            }
+            //     // If we found a callback for this stream, invoke it
+            //     if (it != this->stream_callbacks_.end() && it->second)
+            //     {
+            //         // Call the registered callback with the stream name and data
+            //         it->second(stream_name, message);
+            //     }
+            // }
+            // else
+            // {
+            //     // Handle single stream format or messages that don't match combined format
+            //     // This handles direct stream connections or non-standard message formats
+            //     std::lock_guard<std::mutex> lock(callbacks_mutex_);
+                
+            //     // If we have any registered callbacks, use the first one
+            //     // This is a fallback for single-stream connections
+            //     if (!stream_callbacks_.empty())
+            //     {
+            //         auto first_callback = stream_callbacks_.begin();
+            //         // Pass the entire message as-is to the callback
+            //         first_callback->second(first_callback->first, message);
+            //     }
+            // }
         }
         catch (const std::exception &e)
         {

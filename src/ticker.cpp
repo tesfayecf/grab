@@ -73,16 +73,11 @@ namespace ticker
         {
             // Register callback with the connection for this stream
             // Use weak_ptr to avoid circular references between Ticker and Connection
-            this->connection_->subscribe_stream(ticker_symbol_, stream_name_,
-                [weak_self = std::weak_ptr<Ticker>(shared_from_this())](const std::string &stream_name, const std::string &data)
+            this->connection_->subscribe_stream(this->ticker_symbol_, this->stream_name_,
+                [self = shared_from_this()](const std::string &data)
                 {
-                    // Convert weak_ptr to shared_ptr to safely access the Ticker instance
-                    if (auto self = weak_self.lock())
-                    {
-                        // Forward the message to the ticker's internal handler
-                        self->handle_message_(stream_name, data);
-                    }
-                    // If weak_ptr.lock() fails, the Ticker has been destroyed and we ignore the message
+                    // Forward the message to the ticker's internal handler
+                    self->handle_message_(data);
                 }
             );
 
@@ -152,14 +147,8 @@ namespace ticker
     // private:
 
     // Internal method to handle messages received from the connection
-    void Ticker::handle_message_(const std::string &stream_name, const std::string &data)
+    void Ticker::handle_message_(const std::string &data)
     {
-        // Verify this message is for our stream (safety check)
-        if (stream_name != this->ticker_symbol_)
-        {
-            return; // Not for us - ignore this message
-        }
-
         // Forward the message data to the user's callback if one is registered
         if (this->on_message_)
         {

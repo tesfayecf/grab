@@ -31,7 +31,7 @@ namespace connection
 
     // Type alias for message callback functions that handle incoming stream data
     // Parameters: stream_name (e.g., "btcusdt@depth"), message_data (JSON payload)
-    using MessageCallback = std::function<void(const std::string &stream_name, const std::string &data)>;
+    using MessageCallback = std::function<void(const std::string &data)>;
 
     // Type alias for connection event callbacks (connect/disconnect notifications)
     // These callbacks allow external code to react to connection state changes

@@ -9,7 +9,7 @@
         {
             "name": "default",
             "hidden": true,
-            "binaryDir": "${sourceDir}/.build/${presetName}",
+            "binaryDir": "${sourceDir}/.builds/${presetName}",
             "generator": "Ninja",
             "architecture": {
                 "value": "x64",
@@ -20,28 +20,31 @@
             }
         },
         {
-            "name": "release",
+            "name": "grab",
             "inherits": "default",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
         },
         {
-            "name": "debug",
+            "name": "test",
             "inherits": "default",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTS": "ON"
             }
         }
     ],
     "buildPresets": [
         {
-            "name": "release",
-            "configurePreset": "release"
-        },
+            "name": "grab",
+            "configurePreset": "grab"
+        }
+    ],
+    "testPresets": [
         {
-            "name": "debug",
-            "configurePreset": "debug"
+            "name": "test",
+            "configurePreset": "test"
         }
     ]
 }

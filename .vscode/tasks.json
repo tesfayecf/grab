@@ -9,7 +9,7 @@
         "type": "shell",
         "command": "cmake",
         "args": [
-            "--build", "${workspaceFolder}/.build/debug",
+            "--build", "${workspaceFolder}/.builds/grab",
             "--target", "install",
         ],
         "group": {
@@ -24,7 +24,7 @@
         "command": "cmake",
         "args": [
           "-S", "${workspaceFolder}",
-          "-B", "${workspaceFolder}/.build/debug",
+          "-B", "${workspaceFolder}/.builds/grab",
           "-G", "Ninja",
           "-D", "CMAKE_MAKE_PROGRAM=${workspaceFolder}/../.deps/ninja/ninja",
         ],

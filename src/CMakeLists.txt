@@ -6,6 +6,7 @@ file(GLOB PROJECT_SOURCES
     "main.cpp"
     "ticker.cpp"
     "connection.cpp"
+    "./graph/graph.cpp"
 )
 
 # Gather header files (using CONFIGURE_DEPENDS for automatic reconfiguration)
@@ -23,6 +24,9 @@ target_include_directories(${TARGET_NAME} PRIVATE ${Boost_INCLUDE_DIR})
 # Import OpenSSL (private dependency)
 target_include_directories(${TARGET_NAME} PRIVATE ${OpenSSL_INCLUDE_DIR})
 target_link_libraries(${TARGET_NAME} PRIVATE ${OpenSSL_LIBS})
+
+# Import JsonNlohmann (private dependency)
+target_include_directories(${TARGET_NAME} PRIVATE ${JsonNlohmann_INCLUDE_DIR})
 
 # Set target rpath
 set(CMAKE_INSTALL_RPATH "/usr/lib;/usr/local/lib;")

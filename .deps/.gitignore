@@ -1,3 +1,4 @@
-openssl-3.5.2
-boost-1.71.0
 binapi
+boost-1.71.0
+json-nlohmann-3.7.3
+openssl-3.5.2

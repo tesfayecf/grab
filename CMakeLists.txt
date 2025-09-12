@@ -51,8 +51,9 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Find external dependencies
-find_package(Boost 1.71.0 REQUIRED)
-find_package(OpenSSL REQUIRED) # Automically adds OpenSSL_INCLUDE_DIR
+find_package(Boost 1.71.0 REQUIRED EXACT)
+find_package(OpenSSL 3.5.2 REQUIRED EXACT) # Automically adds OpenSSL_INCLUDE_DIR
+find_package(JsonNlohmann 3.7.3 REQUIRED EXACT)
 
 # Print configuration summary
 message(STATUS "Configuration Summary:")
@@ -65,6 +66,7 @@ message(STATUS "  Build Directory:   ${CMAKE_BINARY_DIR}")
 message(STATUS "  Install Prefix:    ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "  Boost Version:     ${Boost_VERSION}")
 message(STATUS "  OpenSSL Version:   ${OpenSSL_VERSION}")
+message(STATUS "  JsonNlohmann Version:      ${JsonNlohmann_VERSION}")
 
 # Add the source code
 add_subdirectory(src)

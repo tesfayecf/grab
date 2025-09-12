@@ -8,7 +8,28 @@
             "name": "grab",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.install/debug/bin/grab",
+            "program": "${workspaceFolder}/.install/grab/bin/grab",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "grab-build"
+        },
+        {
+            "name": "test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.install/test/bin/test",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

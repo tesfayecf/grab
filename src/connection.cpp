@@ -39,7 +39,8 @@ namespace connection
     // Destructor: Ensure clean shutdown by calling stop()
     Connection::~Connection()
     {
-        this->stop(); // This will disconnect and clean up all resources
+        // Disconnect and clean up all resources
+        this->stop();
     }
 
     // Set callback functions for connection state changes
@@ -160,7 +161,8 @@ namespace connection
         // This prevents redundant connection attempts
         if (!this->is_connected())
         {
-            this->connect(); // Initiate the connection process
+            // Initiate the connection process
+            this->connect();
         }
     }
 
@@ -192,11 +194,13 @@ namespace connection
 
         try
         {
-            std::cout << "Sending message: " << message << std::endl;
+            // std::cout << "Sending message: " << message << std::endl;
             // Send the message through the WebSocket using Boost.Asio buffer
             // This is a synchronous operation that will block until sent
             this->ws_->write(net::buffer(message));
-            return true; // Successfully sent
+
+            // Successfully sent
+            return true;
         }
         catch (const std::exception &e)
         {
@@ -217,7 +221,7 @@ namespace connection
         this->stream_callbacks_[id] = std::move(callback);
 
         // Log the subscription for debugging purposes
-        std::cout << "Subscribed to stream: " << stream_name << " (total streams: " << stream_callbacks_.size() << ")" << std::endl;
+        std::cout << "Subscribed to stream: " << stream_name << std::endl;
 
         // If already connected to the server, send immediate subscription message
         if (this->is_connected_)
@@ -234,7 +238,7 @@ namespace connection
 
             // Convert to string for sending
             std::string subscription_message = json.str();
-            std::cout << "Sending subscription: " << subscription_message << std::endl;
+            // std::cout << "Sending subscription: " << subscription_message << std::endl;
 
             // Send the subscription message asynchronously to avoid blocking
             // Use weak_ptr pattern to avoid circular references and potential deadlocks
@@ -275,7 +279,7 @@ namespace connection
 
             // Convert to string for sending
             std::string unsubscription_message = json.str();
-            std::cout << "Sending unsubscription: " << unsubscription_message << std::endl;
+            // std::cout << "Sending unsubscription: " << unsubscription_message << std::endl;
 
             // Send the unsubscription message asynchronously
             auto self = shared_from_this();
@@ -469,7 +473,7 @@ namespace connection
         std::string target = this->config_.endpoint;
 
         // Debug output to help with connection troubleshooting
-        std::cout << "WebSocket connecting to: " << target << std::endl;
+        // std::cout << "WebSocket connecting to: " << target << std::endl;
 
         // Perform the actual WebSocket handshake with the server
         this->ws_->async_handshake(
@@ -641,11 +645,10 @@ namespace connection
         catch (const std::exception &e)
         {
             // Handle any parsing or callback errors
-            if (on_error_)
+            if (this->on_error_)
             {
                 // Provide detailed error information including the problematic message
-                on_error_("Failed to parse message: " + std::string(e.what()) + 
-                            " | Message: " + message);
+                this->on_error_("Failed to parse message: " + std::string(e.what()) + " | Message: " + message);
             }
         }
     }
@@ -660,6 +663,7 @@ namespace connection
             {
                 // Send a pong response with the same payload that was received in the ping
                 // This is required by the WebSocket protocol to maintain connection health
+                // std::cout << "Received ping, sending pong" << std::endl;
                 this->ws_->pong(frame);
                 
                 // Record the timestamp of this ping for monitoring purposes
@@ -698,6 +702,15 @@ namespace connection
         );
     }
 
+    // Handle the 24-hour connection timeout event
+    void Connection::on_connection_timeout()
+    {
+        // Trigger a reconnection due to the mandatory 24-hour timeout
+        // Binance WebSocket API requires connections to be renewed every 24 hours
+        // to ensure optimal performance and compliance with their service requirements
+        this->on_connection_error_("Connection timeout after 24 hours - reconnecting as per Binance requirements");
+    }
+
     // Reset the ping timeout timer to monitor for server activity
     void Connection::reset_ping_timer()
     {
@@ -719,6 +732,21 @@ namespace connection
                 }
             }
         );
+    }
+
+    // Handle ping timeout when no server activity is detected
+    void Connection::on_ping_timeout()
+    {
+        // Trigger a reconnection due to lack of server communication
+        // This indicates the connection may be stale or the server is unresponsive
+        // Regular server activity (messages or pings) should reset this timer
+        this->on_connection_error_("Ping timeout - no activity detected within timeout period");
+
+        // Reset the ping timer to monitor for server activity again
+        this->reset_ping_timer();
+
+        // Reconnect
+        this->reconnect_();
     }
 
     // Handle connection errors and manage reconnection logic
@@ -751,24 +779,6 @@ namespace connection
             // Schedule a reconnection attempt after the configured delay
             this->reconnect_();
         }
-    }
-
-    // Handle the 24-hour connection timeout event
-    void Connection::on_connection_timeout()
-    {
-        // Trigger a reconnection due to the mandatory 24-hour timeout
-        // Binance WebSocket API requires connections to be renewed every 24 hours
-        // to ensure optimal performance and compliance with their service requirements
-        this->on_connection_error_("Connection timeout after 24 hours - reconnecting as per Binance requirements");
-    }
-
-    // Handle ping timeout when no server activity is detected
-    void Connection::on_ping_timeout()
-    {
-        // Trigger a reconnection due to lack of server communication
-        // This indicates the connection may be stale or the server is unresponsive
-        // Regular server activity (messages or pings) should reset this timer
-        this->on_connection_error_("Ping timeout - no activity detected within timeout period");
     }
 
 } // namespace connection

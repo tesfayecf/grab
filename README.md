@@ -10,7 +10,7 @@ By transforming live exchange rates into logarithmic weights, the engine models 
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Real-time Live Streaming**: Connects directly to Binance's API via secure WebSockets using `Boost.Asio`, `Boost.Beast`, and `OpenSSL` (TLS 1.3).
 * **Asynchronous Multi-Threaded Engine**: Utilizes asynchronous network I/O powered by a thread pool and synchronized via Boost.Asio strands to update exchange rates in a highly thread-safe, lock-free manner.
@@ -24,7 +24,7 @@ By transforming live exchange rates into logarithmic weights, the engine models 
 
 ---
 
-## 📐 Theoretical Framework: Logarithmic Arbitrage Search
+## Theoretical Framework: Logarithmic Arbitrage Search
 
 In standard trading, triangular or cyclic arbitrage is found when starting with an asset $A$, sequentially trading through multiple intermediates, and ending back with more of asset $A$ than we started with. 
 
@@ -66,7 +66,7 @@ The **Bellman-Ford algorithm** is then executed over the graph. Since a negative
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 grab/
@@ -91,7 +91,7 @@ grab/
 
 ---
 
-## 🛠️ Build and Setup
+## Build and Setup
 
 ### Prerequisites
 
@@ -131,7 +131,7 @@ Upon successful compilation, the compiled executable will be located in the bina
 
 ---
 
-## 💻 Running the Engine
+## Running the Engine
 
 Simply execute the compiled binary to start monitoring the market in real-time.
 
@@ -161,7 +161,7 @@ Accumulated profit: 5.4312%
 
 ---
 
-## 🏗️ Core Class Architecture
+## Core Class Architecture
 
 ### `grab::connection::Connection`
 The networking engine. It manages a raw TCP socket, handles SSL handshake negotiations with Binance's server via OpenSSL, and upgrades the session into an active RFC 6455 WebSocket.
@@ -181,7 +181,7 @@ The main data structures. Maps symbols to discrete indexes, computes direct/indi
 
 ---
 
-## 🛡️ License
+## License
 
 This project is licensed under the **MIT License**. Feel free to use, modify, and distribute it for private or commercial purposes.
 
